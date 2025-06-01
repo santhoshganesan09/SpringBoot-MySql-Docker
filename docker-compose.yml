@@ -1,0 +1,69 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: student_docker
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+    networks:
+      - my-network
+
+    volumes:
+      - mysql-s-data:/var/lib/mysql
+
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring-boot-app
+    ports:
+      - "8091:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/student_docker?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update  # Change to 'create-drop' if you want to recreate the schema every time
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+    networks:
+      - my-network
+
+
+
+
+
+networks:
+  my-network:
+    driver: bridge
+
+
+volumes:
+  mysql-s-data:
+
+
+
+
